@@ -12,7 +12,6 @@ from ..config import cfg
 
 __all__ = ['get_segmentation_loss']
 
-
 class MixSoftmaxCrossEntropyLoss(nn.CrossEntropyLoss):
     def __init__(self, aux=True, aux_weight=0.2, ignore_index=-1, **kwargs):
         super(MixSoftmaxCrossEntropyLoss, self).__init__(ignore_index=ignore_index)
@@ -387,6 +386,33 @@ class PointRendLoss(nn.CrossEntropyLoss):
         return dict(loss=loss)
 
 
+class DocUnetLoss(nn.Module):
+    def __init__(self, weight=None, aux=False, aux_weight=0.4, ignore_index=-1, **kwargs):
+        super(DocUnetLoss, self).__init__()
+        self.kwargs = kwargs
+        self.weight = weight
+        self.ignore_index = ignore_index
+        self.aux = aux
+        self.aux_weight = aux_weight
+        self.r = 0.1
+        self.reduction = 'mean' #reduction
+
+    def forward(self, *inputs, **kwargs):
+        preds, target = tuple(inputs)
+        d = preds - target
+        loss_f = []
+        for batch_ind in d:
+            loss_f.append(torch.abs(batch_ind).mean() - self.r * torch.abs(batch_ind.mean()))
+        loss_f = torch.stack(loss_f)
+        if self.reduction == 'mean':
+            loss_f = loss_f.mean()
+        else:
+            loss_f = loss_f.sum()
+        
+        loss_e = F.mse_loss(preds, target, reduce=self.reduction)
+        return dict(loss=loss_f + loss_e)
+
+
 def get_segmentation_loss(model, use_ohem=False, **kwargs):
     if use_ohem:
         return MixSoftmaxCrossEntropyOHEMLoss(**kwargs)
@@ -408,5 +434,8 @@ def get_segmentation_loss(model, use_ohem=False, **kwargs):
     elif model == 'pointrend':
         logging.info('Use pointrend loss!')
         return PointRendLoss(**kwargs)
+    elif model == 'docunet':
+        logging.info('Use docUnet loss!')
+        return DocUnetLoss(**kwargs)
     else:
         return MixSoftmaxCrossEntropyLoss(**kwargs)

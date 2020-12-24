@@ -1,0 +1,17 @@
+DATASET:
+    NAME: "docunet"
+    MODE: 'val'
+TRAIN:
+    EPOCHS: 50
+    BATCH_SIZE: 2
+
+TEST:
+    BATCH_SIZE: 2
+
+SOLVER:
+    LR: 0.0001
+
+MODEL:
+    MODEL_NAME: "DeepLabV3_Plus"
+    BACKBONE: "xception65"
+    BN_EPS_FOR_ENCODER: 1e-3

@@ -4,6 +4,7 @@ import torch
 import numpy as np
 
 from PIL import Image
+from torchvision import transforms
 from .seg_data_base import SegmentationDataset
 
 
@@ -24,11 +25,13 @@ class DocSegmentation(SegmentationDataset):
         self.masks = []
         with open(os.path.join(_split_f), "r") as lines:
             for line in lines:
+                name = os.path.splitext(line)[0]
                 _image = os.path.join(self.root, split, line.rstrip('\n'))
                 # print("_image: ", _image)
                 assert os.path.isfile(_image)
                 self.images.append(_image)
-                _mask = os.path.join(self.root, split, line.rstrip('\n') + ".npy")
+                _mask = os.path.join(self.root, split, name + "_dst.npy")
+                # print("_mask:", _mask)
                 assert os.path.isfile(_mask)
                 self.masks.append(_mask)
         assert (len(self.images) == len(self.masks))
@@ -42,8 +45,8 @@ class DocSegmentation(SegmentationDataset):
         # toTensor
         if self.transform is not None:
             img = self.transform(img)
-            mask = self.transform(mask)
 
+        mask = transforms.ToTensor()(mask)
         return img, mask, os.path.basename(self.images[index])
 
     def __len__(self):
@@ -51,6 +54,9 @@ class DocSegmentation(SegmentationDataset):
 
     def _img_transform(self, img):
         return np.array(img)
+
+    def _docunet_mask_transform(self, img):
+        return transforms.ToTensor()
 
     @property
     def classes(self):

@@ -112,6 +112,7 @@ class SegmentationDataset(object):
 
     def _mask_transform(self, mask):
         return np.array(mask).astype('int32')
+    
 
     @property
     def num_class(self):

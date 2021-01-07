@@ -38,6 +38,7 @@ class Trainer(object):
             transforms.ToTensor(),
             transforms.Normalize(cfg.DATASET.MEAN, cfg.DATASET.STD),
         ])
+
         # dataset and dataloader
         data_kwargs = {'transform': input_transform, 'root': 'D:/Dataset/docUnet'}
         train_dataset = get_segmentation_dataset(cfg.DATASET.NAME, split='train', mode='train', **data_kwargs)
@@ -78,7 +79,8 @@ class Trainer(object):
             logging.info('Not use SyncBatchNorm!')
 
         # create criterion
-        self.criterion = get_segmentation_loss(cfg.MODEL.MODEL_NAME, use_ohem=cfg.SOLVER.OHEM,
+        loss_name = "docunet"
+        self.criterion = get_segmentation_loss(loss_name, use_ohem=cfg.SOLVER.OHEM,
                                                aux=cfg.SOLVER.AUX, aux_weight=cfg.SOLVER.AUX_WEIGHT,
                                                ignore_index=cfg.DATASET.IGNORE_INDEX).to(self.device)
 
@@ -125,14 +127,16 @@ class Trainer(object):
         self.model.train()
         iteration = self.start_epoch * iters_per_epoch if self.start_epoch > 0 else 0
         for (images, targets, _) in self.train_loader:
+            
             epoch = iteration // iters_per_epoch + 1
             iteration += 1
 
             images = images.to(self.device)
             targets = targets.to(self.device)
-
             outputs = self.model(images)
-            loss_dict = self.criterion(outputs, targets)
+            # print("outputs: ", outputs)
+
+            loss_dict = self.criterion(outputs[0], targets)
 
             losses = sum(loss for loss in loss_dict.values())
 
@@ -181,6 +185,9 @@ class Trainer(object):
         for i, (image, target, filename) in enumerate(self.val_loader):
             image = image.to(self.device)
             target = target.to(self.device)
+            print("image: ", image)
+            print("target: ", target)
+            print("filename: ", filename)
 
             with torch.no_grad():
                 if cfg.DATASET.MODE == 'val' or cfg.TEST.CROP_SIZE is None:
@@ -220,3 +227,6 @@ if __name__ == '__main__':
     # create a trainer and start train
     trainer = Trainer(args)
     trainer.train()
+
+
+# python tools/train_docunet.py --config-file my_configs/docunet_deeplab.yaml

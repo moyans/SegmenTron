@@ -1,6 +1,7 @@
 DATASET:
     NAME: "docunet"
     MODE: 'val'
+    WORKERS: 0
 TRAIN:
     EPOCHS: 50
     BATCH_SIZE: 2
